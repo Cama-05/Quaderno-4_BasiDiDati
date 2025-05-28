@@ -28,10 +28,10 @@ Questa applicazione permette di:
 if check_connection():
     # Query per ottenere i dati per i grafici
     query_lezioni = """
-    SELECT Giorno, OraInizio, COUNT(*) as NumeroLezioni
+    SELECT OraInizio, COUNT(*) as NumeroLezioni
     FROM PROGRAMMA
-    GROUP BY Giorno, OraInizio
-    ORDER BY Giorno, OraInizio
+    GROUP BY OraInizio
+    ORDER BY OraInizio
     """
 
     result = execute_query(st.session_state["connection"], query_lezioni)
@@ -40,7 +40,7 @@ if check_connection():
     # Area Chart per le lezioni per slot temporale
     st.subheader("📈 Distribuzione delle lezioni per slot temporale")
     st.area_chart(
-        df_lezioni.pivot(index='OraInizio', columns='Giorno', values='NumeroLezioni'),
+        df_lezioni.set_index('OraInizio'),
         use_container_width=True
     )
 

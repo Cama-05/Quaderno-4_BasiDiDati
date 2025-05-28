@@ -14,7 +14,16 @@ def connect_db(dialect,username,password,host,dbname):
         return False
 
 def execute_query(conn,query):
-    return conn.execute(text(query))
+    try:
+        result = conn.execute(text(query))
+        # Se la query è un INSERT, UPDATE o DELETE, fai il commit
+        if query.strip().upper().startswith(('INSERT', 'UPDATE', 'DELETE')):
+            conn.commit()
+        return result
+    except Exception as e:
+        # In caso di errore, fai il rollback
+        conn.rollback()
+        raise e
 
 #Mostrare i numeri in una forma più compatta
 def compact_format(num):

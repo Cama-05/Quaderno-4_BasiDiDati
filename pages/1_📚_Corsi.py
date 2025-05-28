@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from utils import check_connection, execute_query
+from utils import *
 
 st.set_page_config(page_title="Corsi", layout="wide")
 st.title("📚 Gestione Corsi")
@@ -29,47 +29,88 @@ if check_connection():
     col1, col2 = st.columns(2)
 
     with col1:
-        tipo_selezionato = st.multiselect(
-            "Seleziona il tipo di corso",
-            options=tipi_corsi['Tipo'].tolist()
-        )
+        tipo_selezionato = st.multiselect("Seleziona il tipo di corso",options=tipi_corsi['Tipo'].tolist())
 
     with col2:
-        livello_min = st.select_slider(
-            "Livello minimo",
-            options=livelli['Livello'].tolist(),
-            value=min(livelli['Livello'].tolist())
-        )
-        livello_max = st.select_slider(
-            "Livello massimo",
-            options=livelli['Livello'].tolist(),
-            value=max(livelli['Livello'].tolist())
-        )
+        livello_min = st.slider("Livello minimo",min_value=min(livelli['Livello'].tolist()),max_value=max(livelli['Livello'].tolist()))
+        livello_max = st.slider("Livello massimo",min_value=min(livelli['Livello'].tolist()),max_value=max(livelli['Livello'].tolist()), value=max(livelli['Livello'].tolist()))
+        if(livello_min > livello_max):
+            st.warning("⚠️Il livello minimo non può essere maggiore del livello massimo")
 
     # Query per ottenere i corsi filtrati
-    query = """
-    SELECT c.*, 
-           CONCAT(i.Nome, ' ', i.Cognome) as Istruttore,
-           i.Email
+    query =f"""
+    SELECT c.CodC, c.Nome, c.Tipo, c.Livello
     FROM CORSI c
-    LEFT JOIN PROGRAMMA p ON c.CodC = p.CodC
-    LEFT JOIN ISTRUTTORE i ON p.CodFisc = i.CodFisc
-    WHERE 1=1
+    WHERE c.Livello >= {livello_min} AND c.Livello <= {livello_max}
     """
 
-    if tipo_selezionato:
-        query += f" AND c.Tipo IN {tuple(tipo_selezionato)}"
-    query += f" AND c.Livello BETWEEN {livello_min} AND {livello_max}"
+    #Completamento opportuno della query
+    if livello_max > livello_min:
+        if tipo_selezionato:
+            query += " AND ("
+            for (i,tipo) in enumerate(tipo_selezionato):
+                query += f"c.Tipo = '{tipo}'"
+                if i < len(tipo_selezionato) - 1:
+                    query += "OR "
+            query += ")"
+    
     query += " GROUP BY c.CodC"
 
+
     result_corsi = execute_query(st.session_state["connection"], query)
-    df_corsi = pd.DataFrame(result_corsi.fetchall(), columns=result_corsi.keys()) #ATTENZIONE CONTROLLLA
+    df_corsi = pd.DataFrame(result_corsi.fetchall(), columns=result_corsi.keys())
 
     if len(df_corsi) == 0:
-        st.warning("⚠️ Nessun corso trovato con i filtri selezionati")
+        if livello_max > livello_min:
+            st.warning("⚠️ Nessun corso trovato con i filtri selezionati")
     else:
-        st.dataframe(df_corsi[['CodC', 'Nome', 'Tipo', 'Livello']], use_container_width=True)
+        st.dataframe(df_corsi[['CodC', 'Nome', 'Tipo', 'Livello']], use_container_width=True, hide_index=True)
         
         with st.expander("📅 Programma lezioni per i corsi selezionati"):
             if len(df_corsi) > 0:
-                st.dataframe(df_corsi[['Nome', 'Istruttore', 'Email']], use_container_width=True) 
+                # Creo una lista dei codici corso filtrati
+                codici_corsi = tuple(df_corsi['CodC'].tolist())
+                
+                # Nuova query per ottenere i dettagli delle lezioni
+                query_lezioni = f"""
+                SELECT 
+                    c.CodC as 'Codice Corso',
+                    c.Nome as 'Nome Corso',
+                    CONCAT(i.Nome, ' ', i.Cognome) as 'Istruttore',
+                    i.Email,
+                    p.Giorno,
+                    p.OraInizio as 'Orario Inizio',
+                    p.Durata as 'Durata',
+                    p.Sala
+                FROM CORSI c,PROGRAMMA p, ISTRUTTORE i
+                WHERE c.CodC = p.CodC
+                AND p.CodFisc = i.CodFisc
+                """
+                #Completamento opportuno della query
+                if livello_max > livello_min:
+                    if len(codici_corsi)>0:
+                        query_lezioni+= " AND ("
+                        for (i,codice) in enumerate(codici_corsi):
+                            query_lezioni+= f"c.CodC = '{codice}'"
+                            if i < len(codici_corsi) - 1:
+                                query_lezioni+= "OR "
+                    query_lezioni+= ")"
+
+                query_lezioni +=f"ORDER BY c.Nome, p.OraInizio"
+                
+                result_lezioni = execute_query(st.session_state["connection"], query_lezioni)
+                df_lezioni = pd.DataFrame(result_lezioni.fetchall(), columns=result_lezioni.keys())
+                
+                if len(df_lezioni) > 0:
+                    st.dataframe(
+                        df_lezioni,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                else:
+                    st.info("Nessuna lezione programmata per i corsi selezionati")
+            else:
+                st.info("Nessun corso selezionato")
+else:
+    st.warning("🔌 Connettiti al database per utilizzare questa funzionalità")
+    st.info("Utilizza il pulsante 'Connettiti al Database' nella barra laterale")
