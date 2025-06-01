@@ -1,46 +1,46 @@
 import streamlit as st
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 
-def connect_db():
+# Connect to the engine
+def connect_db(dialect, username, password, host, dbname):
     try:
-        conn = st.connection("neon", type="sql")
-        return conn
+        engine = create_engine(f'{dialect}://{username}:{password}@{host}/{dbname}')
+        connection = engine.connect()
+        return connection
     except Exception as e:
-        st.sidebar.error(f"Errore di connessione: {e}")
-        return None
+        st.sidebar.error(f"Errore di connessione: {str(e)}")
+        return False
 
 def execute_query(connection, query):
     try:
-        query_type = query.strip().split()[0].upper()
-        if query_type == "SELECT":
-            # Query di lettura
-            df = connection.query(query, ttl="10m")
-            return df
-        elif query_type in ("INSERT", "UPDATE", "DELETE"):
-            # Query di scrittura
-            with connection.session as session:
-                session.execute(text(query))
-                session.commit()
-            st.success("Query eseguita con successo!")
-            return None
-        else:
-            st.warning("Tipo di query non riconosciuto o non supportato.")
-            return None
+        result = connection.execute(text(query))
+        # If the query is an INSERT, UPDATE or DELETE, commit the transaction
+        if query.strip().upper().startswith(('INSERT', 'UPDATE', 'DELETE')):
+            connection.commit()
+        return result
     except Exception as e:
-        st.error(f"Errore nell'esecuzione della query: {e}")
-        return None
+        # On error, rollback the transaction
+        connection.rollback()
+        raise e
 
+# Check if the database connection has been established
 def check_connection():
-    if "connection" not in st.session_state:
-        st.session_state["connection"] = None
+    if "connection" not in st.session_state.keys():
+        st.session_state["connection"] = False
 
     if st.sidebar.button("Connettiti al Database"):
-        db_connection = connect_db()
-        if db_connection:
+        user = st.secrets["mysql"]["user"]
+        password = st.secrets["mysql"]["password"]
+        host = st.secrets["mysql"]["host"]
+        port = st.secrets["mysql"]["port"]
+        database = st.secrets["mysql"]["database"]
+        db_connection = connect_db(dialect="mysql+pymysql", username=user, password=password, host=host+":"+port, dbname=database)
+        if db_connection is not False:
             st.session_state["connection"] = db_connection
-            st.sidebar.success("Connesso al DB")
         else:
-            st.session_state["connection"] = None
+            st.session_state["connection"] = False
             st.sidebar.error("Errore nella connessione al DB")
 
-    return st.session_state["connection"]
+    if st.session_state["connection"]:
+        st.sidebar.success("Connesso al DB")
+        return True
