@@ -62,11 +62,8 @@ if check_connection():
         # Bar Chart: number of classes per weekday
         st.subheader("📊 Lezioni per giorno della settimana")
 
-        # Explicit weekday order
-        weekdays_order = ['lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
-
         chart = alt.Chart(df_schedule_by_day).mark_bar().encode(
-            x=alt.X('giorno:N', sort=weekdays_order, title='Giorno della setttimana'),
+            x=alt.X('giorno:N', title='Giorno della setttimana'),
             y=alt.Y('numerolezioni:Q', title='Numero di Lezioni'),
             tooltip=['giorno', 'numerolezioni']
         ).properties(
