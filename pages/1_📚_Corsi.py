@@ -21,7 +21,7 @@ if check_connection():
     col1, col2 = st.columns(2)
     with col1:
         st.write(result_count)
-        st.metric("Numero totale corsi", result_count[0])
+        st.metric("Numero totale corsi", total_courses[0]['count'])
     with col2:
         st.metric("Numero tipi di corsi", total_types)
 
