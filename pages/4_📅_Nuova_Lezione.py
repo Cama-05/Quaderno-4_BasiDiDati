@@ -8,109 +8,119 @@ st.set_page_config(page_title="Nuova Lezione", layout="wide")
 st.title("📅 Inserimento Nuova Lezione")
 
 if check_connection():
-    # Ottieni la lista degli istruttori con codice fiscale
-    result_istruttori = execute_query(st.session_state["connection"],
-        "SELECT CodFisc, CONCAT(Nome, ' ', Cognome) as NomeCompleto FROM ISTRUTTORE ORDER BY Cognome, Nome")
-    istruttori = pd.DataFrame(result_istruttori)
-    
-    # Ottieni la lista dei corsi
-    result_corsi = execute_query(st.session_state["connection"], "SELECT CodC, Nome FROM CORSI ORDER BY Nome")
-    corsi = pd.DataFrame(result_corsi)
+    # Get instructors list with tax code
+    instructor_result = execute_query(
+        st.session_state["connection"],
+        "SELECT CodFisc, CONCAT(Nome, ' ', Cognome) as NomeCompleto FROM ISTRUTTORE ORDER BY Cognome, Nome"
+    )
+    instructors_df = pd.DataFrame(instructor_result)
 
+    # Get course list
+    course_result = execute_query(
+        st.session_state["connection"],
+        "SELECT CodC, Nome FROM CORSI ORDER BY Nome"
+    )
+    courses_df = pd.DataFrame(course_result)
 
-    #FORM
-    with st.form("nuova_lezione_form"):
+    # FORM
+    with st.form("new_lesson_form"):
         st.subheader("📝 Inserisci i dati della nuova lezione")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            #Selezione Istruttore
-            istruttore_selezionato = st.selectbox(
-                "👨‍🏫 Istruttore (Codice Fiscale)", 
-                options=istruttori['CodFisc'].tolist()
+
+        col_left, col_right = st.columns(2)
+        with col_left:
+            # Instructor selection
+            selected_instructor = st.selectbox(
+                "👨‍🏫 Istruttore (Codice Fiscale)",
+                options=instructors_df['CodFisc'].tolist()
             )
-            #Selezione Corso
-            corso_selezionato = st.selectbox(
-                "🏋️ Corso", 
-                options=corsi['CodC'].tolist()
+            # Course selection
+            selected_course = st.selectbox(
+                "🏋️ Corso",
+                options=courses_df['CodC'].tolist()
             )
-        with col2:
-            #Selezione orario inizo
-            orario_inizio = st.time_input(
+
+        with col_right:
+            # Start time input
+            start_time = st.time_input(
                 "🕒 Orario di inizio",
                 value=datetime.time(),
                 step=datetime.timedelta(minutes=15)
             )
-            #Selezione durata
-            durata = st.slider(
-                "⏱️ Durata (minuti)", 
-                min_value=15, 
-                max_value=60, 
-                value=60, 
+            # Duration selection
+            duration = st.slider(
+                "⏱️ Durata (minuti)",
+                min_value=15,
+                max_value=60,
+                value=60,
                 step=15
             )
-        # Nuova riga per avere Giorno e Sala allineati
-        col_giorno, col_sala = st.columns(2)
-        with col_giorno:
-            #Selezione giorno
-            giorno = st.selectbox(
-                "📅 Giorno", 
+
+        # New row for aligned day and room
+        col_day, col_room = st.columns(2)
+        with col_day:
+            # Day selection
+            selected_day = st.selectbox(
+                "📅 Giorno",
                 options=['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì']
             )
-        with col_sala:
-            #Inserimento sala
-            sala = st.text_input(
-                "🏢 Sala", 
+        with col_room:
+            # Room input
+            room = st.text_input(
+                "🏢 Sala",
                 placeholder="Es: Sala A, Palestra 1, etc."
             )
 
-        #Tasto submit
+        # Submit button
         submitted = st.form_submit_button("✅ Inserisci lezione", use_container_width=True)
-        
-        #Gestione degli errori
+
+        # Error handling
         if submitted:
-            errori = []
-            if not sala.strip():
-                errori.append("Il campo Sala deve essere compilato")
-            
-            if errori:
+            errors = []
+            if not room.strip():
+                errors.append("Il campo Sala deve essere compilato")
+
+            if errors:
                 st.error("⚠️ Errori di validazione:")
-                for errore in errori:
-                    st.error(f"• {errore}")
+                for error in errors:
+                    st.error(f"• {error}")
             else:
-                codfisc_istruttore = istruttore_selezionato
-                codc_corso = corso_selezionato
-                # Formatto l'orario in hh:mm:ss
-                ora_inizio_str = orario_inizio.strftime("%H:%M:%S")
-                #Controllo che non ci sia un'altra lezione dello stesso corso nello stesso giorno
-                query_check = f"""
+                instructor_code = selected_instructor
+                course_code = selected_course
+                start_time_str = start_time.strftime("%H:%M:%S")
+
+                # Check for existing lesson for the same course on the same day
+                check_query = f"""
                 SELECT COUNT(*) as count
                 FROM PROGRAMMA 
-                WHERE CodC = '{codc_corso}' AND Giorno = '{giorno}'
+                WHERE CodC = '{course_code}' AND Giorno = '{selected_day}'
                 """
+
                 try:
-                    result_check = execute_query(st.session_state["connection"], query_check)
-                    result = pd.DataFrame(result_check) #Dataframe di una sola riga e colonna
-                    if result.iloc[0]['count']>0: #Accesso e controllo al df
-                        st.error(f"⚠️ Esiste già una lezione per il corso '{codc_corso}' il {giorno}")
+                    check_result = execute_query(st.session_state["connection"], check_query)
+                    count_df = pd.DataFrame(check_result)
+
+                    if count_df.iloc[0]['count'] > 0:
+                        st.error(f"⚠️ Esiste già una lezione per il corso '{course_code}' il {selected_day}")
                     else:
-                        query_insert = f"""
+                        insert_query = f"""
                         INSERT INTO PROGRAMMA (CodFisc, Giorno, OraInizio, Durata, CodC, Sala)
-                        VALUES ('{codfisc_istruttore}', '{giorno}', '{ora_inizio_str}', {durata}, '{codc_corso}', '{sala.strip()}')
+                        VALUES ('{instructor_code}', '{selected_day}', '{start_time_str}', {duration}, '{course_code}', '{room.strip()}')
                         """
-                        execute_query(st.session_state["connection"], query_insert)
-                        st.success(f"✅ Lezione inserita con successo! Corso '{codc_corso}' il {giorno} alle {ora_inizio_str} in {sala}")
+                        execute_query(st.session_state["connection"], insert_query)
+
+                        st.success(f"✅ Lezione inserita con successo! Corso '{course_code}' il {selected_day} alle {start_time_str} in {room}")
 
                         with st.expander("📋 Riepilogo lezione inserita", expanded=True):
                             col1, col2 = st.columns(2)
                             with col1:
-                                st.write(f"**Istruttore (CodFisc):** {codfisc_istruttore}")
-                                st.write(f"**Corso:** {codc_corso}")
-                                st.write(f"**Giorno:** {giorno}")
+                                st.write(f"**Istruttore (CodFisc):** {instructor_code}")
+                                st.write(f"**Corso:** {course_code}")
+                                st.write(f"**Giorno:** {selected_day}")
                             with col2:
-                                st.write(f"**Orario:** {ora_inizio_str}")
-                                st.write(f"**Durata:** {durata} minuti")
-                                st.write(f"**Sala:** {sala}")
+                                st.write(f"**Orario:** {start_time_str}")
+                                st.write(f"**Durata:** {duration} minuti")
+                                st.write(f"**Sala:** {room}")
+
                 except Exception as e:
                     st.error(f"⚠️ Errore durante l'inserimento: {str(e)}")
 else:

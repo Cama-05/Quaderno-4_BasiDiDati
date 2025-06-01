@@ -6,74 +6,73 @@ st.set_page_config(page_title="Corsi", layout="wide")
 st.title("📚 Gestione Corsi")
 
 if check_connection():
-    # Query per ottenere i tipi di corsi disponibili
-    result_tipi = execute_query(st.session_state["connection"], "SELECT DISTINCT Tipo FROM CORSI ORDER BY Tipo")
-    tipi_corsi = [dict(zip(result_tipi.keys(), result)) for result in result_tipi]
+    # Query to get distinct course types
+    result_types = execute_query(st.session_state["connection"], "SELECT DISTINCT Tipo FROM CORSI ORDER BY Tipo")
+    course_types = [dict(zip(result_types.keys(), result)) for result in result_types]
     
-    result_livelli = execute_query(st.session_state["connection"], "SELECT DISTINCT Livello FROM CORSI ORDER BY Livello")
-    livelli = [dict(zip(result_livelli.keys(), result)) for result in result_livelli]
+    result_levels = execute_query(st.session_state["connection"], "SELECT DISTINCT Livello FROM CORSI ORDER BY Livello")
+    levels = [dict(zip(result_levels.keys(), result)) for result in result_levels]
 
-    # Metriche
+    # Metrics
     result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM CORSI")
-    num_corsi = [dict(zip(result_count.keys(), result)) for result in result_count]
-    num_tipi = len(tipi_corsi)
+    total_courses = [dict(zip(result_count.keys(), result)) for result in result_count]
+    total_types = len(course_types)
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Numero totale corsi", num_corsi[0]['count'])
+        st.metric("Numero totale corsi", total_courses[0]['count'])
     with col2:
-        st.metric("Numero tipi di corsi", num_tipi)
+        st.metric("Numero tipi di corsi", total_types)
 
-    # Filtri
+    # Filters
     st.subheader("🔍 Filtra i corsi")
     col1, col2 = st.columns(2)
 
     with col1:
-        tipo_selezionato = st.multiselect("Seleziona il tipo di corso", options=[tipo.get('Tipo') for tipo in tipi_corsi])
+        selected_types = st.multiselect("Seleziona il tipo di corso", options=[tipo.get('Tipo') for tipo in course_types])
 
     with col2:
-        livelli=[livello.get('Livello') for livello in livelli]
-        livello_min = st.slider("Livello minimo",min_value=min(livelli),max_value=max(livelli))
-        livello_max = st.slider("Livello massimo",min_value=min(livelli),max_value=max(livelli), value=max(livelli))
-        if(livello_min > livello_max):
+        levels_values = [level.get('Livello') for level in levels]
+        min_level = st.slider("Livello minimo", min_value=min(levels_values), max_value=max(levels_values))
+        max_level = st.slider("Livello massimo", min_value=min(levels_values), max_value=max(levels_values), value=max(levels_values))
+        if min_level > max_level:
             st.warning("⚠️Il livello minimo non può essere maggiore del livello massimo")
 
-    # Query per ottenere i corsi filtrati
-    query =f"""
+    # Query to get filtered courses
+    query = f"""
     SELECT c.CodC, c.Nome, c.Tipo, c.Livello
     FROM CORSI c
-    WHERE c.Livello >= {livello_min} AND c.Livello <= {livello_max}
+    WHERE c.Livello >= {min_level} AND c.Livello <= {max_level}
     """
 
-    #Completamento opportuno della query
-    if livello_max > livello_min:
-        if tipo_selezionato:
+    # Append type filter to the query
+    if max_level > min_level:
+        if selected_types:
             query += " AND ("
-            for (i,tipo) in enumerate(tipo_selezionato):
+            for i, tipo in enumerate(selected_types):
                 query += f"c.Tipo = '{tipo}'"
-                if i < len(tipo_selezionato) - 1:
+                if i < len(selected_types) - 1:
                     query += "OR "
             query += ")"
     
     query += " GROUP BY c.CodC"
 
+    result_courses = execute_query(st.session_state["connection"], query)
+    df_courses = pd.DataFrame(result_courses)
 
-    result_corsi = execute_query(st.session_state["connection"], query)
-    df_corsi = pd.DataFrame(result_corsi)
-
-    if len(df_corsi) == 0:
-        if livello_max > livello_min:
+    if len(df_courses) == 0:
+        if max_level > min_level:
             st.warning("⚠️ Nessun corso trovato con i filtri selezionati")
     else:
-        st.dataframe(df_corsi[['CodC', 'Nome', 'Tipo', 'Livello']], use_container_width=True, hide_index=True)
+        st.dataframe(df_courses[['CodC', 'Nome', 'Tipo', 'Livello']], use_container_width=True, hide_index=True)
         
         with st.expander("📅 Programma lezioni per i corsi selezionati"):
-            if len(df_corsi) > 0:
-                # Creo una lista dei codici corso filtrati
-                codici_corsi = tuple(df_corsi['CodC'].tolist())
+            if len(df_courses) > 0:
+                # Create a list of filtered course codes
+                course_codes = tuple(df_courses['CodC'].tolist())
                 
-                # Nuova query per ottenere i dettagli delle lezioni
-                query_lezioni = f"""
+                # Query to get class schedule details
+                query_schedule = f"""
                 SELECT 
                     c.CodC as 'Codice Corso',
                     c.Nome as 'Nome Corso',
@@ -87,24 +86,24 @@ if check_connection():
                 WHERE c.CodC = p.CodC
                 AND p.CodFisc = i.CodFisc
                 """
-                #Completamento opportuno della query
-                if livello_max > livello_min:
-                    if len(codici_corsi)>0:
-                        query_lezioni+= " AND ("
-                        for (i,codice) in enumerate(codici_corsi):
-                            query_lezioni+= f"c.CodC = '{codice}'"
-                            if i < len(codici_corsi) - 1:
-                                query_lezioni+= "OR "
-                    query_lezioni+= ")"
+                # Add course filter to the schedule query
+                if max_level > min_level:
+                    if len(course_codes) > 0:
+                        query_schedule += " AND ("
+                        for i, code in enumerate(course_codes):
+                            query_schedule += f"c.CodC = '{code}'"
+                            if i < len(course_codes) - 1:
+                                query_schedule += "OR "
+                        query_schedule += ")"
 
-                query_lezioni +=f"ORDER BY c.Nome, p.OraInizio"
+                query_schedule += f"ORDER BY c.Nome, p.OraInizio"
                 
-                result_lezioni = execute_query(st.session_state["connection"], query_lezioni)
-                df_lezioni = pd.DataFrame(result_lezioni)
+                result_schedule = execute_query(st.session_state["connection"], query_schedule)
+                df_schedule = pd.DataFrame(result_schedule)
                 
-                if len(df_lezioni) > 0:
+                if len(df_schedule) > 0:
                     st.dataframe(
-                        df_lezioni,
+                        df_schedule,
                         use_container_width=True,
                         hide_index=True
                     )

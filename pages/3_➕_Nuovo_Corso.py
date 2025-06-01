@@ -7,22 +7,22 @@ st.title("➕ Inserimento Nuovo Corso")
 st.markdown("**Aggiungi un nuovo corso al database della palestra**")
 
 if check_connection():
-    # Sezione informativa con expander
+    # Informative section with expander
     with st.expander("📋 Informazioni sui corsi", expanded=False):
         st.markdown("I corsi nella palestra sono caratterizzati da un codice identificativo, nome, tipologia e livello di difficoltà.")
-        
-        # Layout con colonne per organizzare le informazioni
-        col1, col2 = st.columns(2)
-        
-        with col1:
+
+        # Layout with columns for structured info
+        col_left, col_right = st.columns(2)
+
+        with col_left:
             st.markdown("**Requisiti per il codice corso:**")
             st.markdown("""
             - Deve iniziare con "CT"
             - Deve essere univoco nel sistema
             - Esempi validi: CT001, CT_YOGA, CT-PILATES
             """)
-        
-        with col2:
+
+        with col_right:
             st.markdown("**Livelli disponibili:**")
             st.markdown("""
             - **Livello 1:** Principiante
@@ -33,34 +33,34 @@ if check_connection():
 
     st.markdown("---")
 
-    # Form per l'inserimento del nuovo corso
-    with st.form("nuovo_corso_form", clear_on_submit=True):
+    # Form for inserting new course
+    with st.form("new_course_form", clear_on_submit=True):
         st.subheader("📊 Dati del nuovo corso")
         st.markdown("Inserisci le informazioni del corso che vuoi aggiungere al database:")
-        
-        # Colonne per i campi del form
-        col_form1, col_form2 = st.columns(2)
-        
-        with col_form1:
+
+        # Form fields in columns
+        form_col_left, form_col_right = st.columns(2)
+
+        with form_col_left:
             st.markdown("**Identificazione del corso**")
-            codc = st.text_input(
+            course_code = st.text_input(
                 "Codice Corso",
                 placeholder="Inserisci codice (es. CT001)"
             )
-            
-            nome = st.text_input(
+
+            course_name = st.text_input(
                 "Nome del corso",
                 placeholder="Inserisci il nome del corso"
             )
-        
-        with col_form2:
+
+        with form_col_right:
             st.markdown("**Caratteristiche del corso**")
-            tipo = st.text_input(
+            course_type = st.text_input(
                 "Tipo di corso",
                 placeholder="Inserisci la tipologia"
             )
-            
-            livello = st.number_input(
+
+            course_level = st.number_input(
                 "Livello (1-4)",
                 min_value=1,
                 max_value=4,
@@ -68,57 +68,56 @@ if check_connection():
                 value=1
             )
 
-        # Bottone di submit del form
+        # Submit button
         submitted = st.form_submit_button("🚀 Inserisci corso", use_container_width=True)
 
         if submitted:
-            # Validazione completa dei dati come richiesto dalle specifiche
-            errori = []
-            
-            # Verifica che tutti i campi siano valorizzati
-            if not codc.strip():
-                errori.append("Il codice corso è obbligatorio")
-            if not nome.strip():
-                errori.append("Il nome del corso è obbligatorio")
-            if not tipo.strip():
-                errori.append("Il tipo di corso è obbligatorio")
-            
-            # Verifica struttura codice corso (deve iniziare con "CT")
-            if codc.strip() and not codc.strip().upper().startswith("CT"):
-                errori.append("Il codice corso deve iniziare con 'CT'")
-            
-            # Visualizzazione errori di validazione
-            if errori:
+            # Full validation of course data
+            validation_errors = []
+
+            # Check required fields
+            if not course_code.strip():
+                validation_errors.append("Il codice corso è obbligatorio")
+            if not course_name.strip():
+                validation_errors.append("Il nome del corso è obbligatorio")
+            if not course_type.strip():
+                validation_errors.append("Il tipo di corso è obbligatorio")
+
+            # Check course code format
+            if course_code.strip() and not course_code.strip().upper().startswith("CT"):
+                validation_errors.append("Il codice corso deve iniziare con 'CT'")
+
+            # Show validation errors
+            if validation_errors:
                 st.error("⚠️ **Errori di validazione rilevati:**")
-                for errore in errori:
-                    st.error(f"• {errore}")
+                for error in validation_errors:
+                    st.error(f"• {error}")
             else:
-                # Tentativo di inserimento nel database
+                # Attempt to insert course into DB
                 try:
-                    # Query di inserimento
-                    query = f"""
+                    insert_query = f"""
                     INSERT INTO CORSI (CodC, Nome, Tipo, Livello)
-                    VALUES ('{codc.strip()}', '{nome.strip()}', '{tipo.strip()}', {livello})
+                    VALUES ('{course_code.strip()}', '{course_name.strip()}', '{course_type.strip()}', {course_level})
                     """
-                    
-                    execute_query(st.session_state["connection"], query)# Il commit viene fatto automaticamente nella funzione execute_query
-                    
-                    # Messaggio di successo
+
+                    execute_query(st.session_state["connection"], insert_query)
+
+                    # Success message
                     st.success("✅ **Corso inserito con successo!**")
                     st.balloons()
-                    
-                    # Informazioni aggiuntive sul corso inserito
-                    st.info(f"Il corso **{nome.strip()}** (codice: **{codc.strip()}**) è stato aggiunto al database.")
+
+                    # Additional info
+                    st.info(f"Il corso **{course_name.strip()}** (codice: **{course_code.strip()}**) è stato aggiunto al database.")
 
                 except Exception as e:
-                    error_message = str(e).lower()
-                    
-                    # Gestione errore chiave duplicata
-                    if "duplicate" in error_message:
+                    error_msg = str(e).lower()
+
+                    # Handle duplicate key error
+                    if "duplicate" in error_msg:
                         st.error("⚠️ **Errore: Codice corso già esistente**")
-                        st.error(f"Il codice **{codc.strip()}** è già presente nel database. Scegli un codice diverso.")
+                        st.error(f"Il codice **{course_code.strip()}** è già presente nel database. Scegli un codice diverso.")
                     else:
-                        # Altri errori generici
+                        # Generic error
                         st.error("⚠️ **Errore durante l'inserimento**")
                         st.error(f"Si è verificato un problema: {str(e)}")
 
