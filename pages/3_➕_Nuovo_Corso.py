@@ -96,7 +96,7 @@ if check_connection():
                 # Attempt to insert course into DB
                 try:
                     insert_query = f"""
-                    INSERT INTO CORSI (CodC, Nome, Tipo, Livello)
+                    INSERT INTO Corsi (CodC, Nome, Tipo, Livello)
                     VALUES ('{course_code.strip()}', '{course_name.strip()}', '{course_type.strip()}', {course_level})
                     """
 

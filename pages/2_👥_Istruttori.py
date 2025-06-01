@@ -35,14 +35,14 @@ if check_connection():
         # Query to get oldest birthdate
         birthdate_min_result = execute_query(
             st.session_state["connection"],
-            "SELECT MIN(DataNascita) as data_min FROM ISTRUTTORE"
+            "SELECT MIN(DataNascita) as data_min FROM Istruttore"
         )
         birthdate_min = [dict(zip(birthdate_min_result.keys(), row)) for row in birthdate_min_result]
 
         # Query to get most recent birthdate
         birthdate_max_result = execute_query(
             st.session_state["connection"],
-            "SELECT MAX(DataNascita) as data_max FROM ISTRUTTORE"
+            "SELECT MAX(DataNascita) as data_max FROM Istruttore"
         )
         birthdate_max = [dict(zip(birthdate_max_result.keys(), row)) for row in birthdate_max_result]
 
@@ -71,7 +71,7 @@ if check_connection():
     # Build SQL query
     query = f"""
     SELECT CodFisc, Nome, Cognome, DataNascita, Email, Telefono
-    FROM ISTRUTTORE
+    FROM Istruttore
     WHERE DataNascita >= '{str(date_min)}' AND DataNascita <= '{str(date_max)}'
     """
 

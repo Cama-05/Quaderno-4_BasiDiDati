@@ -11,14 +11,14 @@ if check_connection():
     # Get instructors list with tax code
     instructor_result = execute_query(
         st.session_state["connection"],
-        "SELECT CodFisc, CONCAT(Nome, ' ', Cognome) as NomeCompleto FROM ISTRUTTORE ORDER BY Cognome, Nome"
+        "SELECT CodFisc, CONCAT(Nome, ' ', Cognome) as NomeCompleto FROM Istruttore ORDER BY Cognome, Nome"
     )
     instructors_df = pd.DataFrame(instructor_result)
 
     # Get course list
     course_result = execute_query(
         st.session_state["connection"],
-        "SELECT CodC, Nome FROM CORSI ORDER BY Nome"
+        "SELECT CodC, Nome FROM Corsi ORDER BY Nome"
     )
     courses_df = pd.DataFrame(course_result)
 
@@ -91,7 +91,7 @@ if check_connection():
                 # Check for existing lesson for the same course on the same day
                 check_query = f"""
                 SELECT COUNT(*) as count
-                FROM PROGRAMMA 
+                FROM Programma 
                 WHERE CodC = '{course_code}' AND Giorno = '{selected_day}'
                 """
 
@@ -103,7 +103,7 @@ if check_connection():
                         st.error(f"⚠️ Esiste già una lezione per il corso '{course_code}' il {selected_day}")
                     else:
                         insert_query = f"""
-                        INSERT INTO PROGRAMMA (CodFisc, Giorno, OraInizio, Durata, CodC, Sala)
+                        INSERT INTO Programma (CodFisc, Giorno, OraInizio, Durata, CodC, Sala)
                         VALUES ('{instructor_code}', '{selected_day}', '{start_time_str}', {duration}, '{course_code}', '{room.strip()}')
                         """
                         execute_query(st.session_state["connection"], insert_query)

@@ -7,14 +7,14 @@ st.title("📚 Gestione Corsi")
 
 if check_connection():
     # Query to get distinct course types
-    result_types = execute_query(st.session_state["connection"], "SELECT DISTINCT Tipo FROM CORSI ORDER BY Tipo")
+    result_types = execute_query(st.session_state["connection"], "SELECT DISTINCT Tipo FROM Corsi ORDER BY Tipo")
     course_types = [dict(zip(result_types.keys(), result)) for result in result_types]
     
-    result_levels = execute_query(st.session_state["connection"], "SELECT DISTINCT Livello FROM CORSI ORDER BY Livello")
+    result_levels = execute_query(st.session_state["connection"], "SELECT DISTINCT Livello FROM Corsi ORDER BY Livello")
     levels = [dict(zip(result_levels.keys(), result)) for result in result_levels]
 
     # Metrics
-    result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM corsi")
+    result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM Corsi")
     total_courses = [dict(zip(result_count.keys(), result)) for result in result_count]
     total_types = len(course_types)
 
@@ -42,7 +42,7 @@ if check_connection():
     # Query to get filtered courses
     query = f"""
     SELECT c.CodC, c.Nome, c.Tipo, c.Livello
-    FROM CORSI c
+    FROM Corsi c
     WHERE c.Livello >= {min_level} AND c.Livello <= {max_level}
     """
 
@@ -83,7 +83,7 @@ if check_connection():
                     p.OraInizio as 'Orario Inizio',
                     p.Durata as 'Durata',
                     p.Sala
-                FROM CORSI c,PROGRAMMA p, ISTRUTTORE i
+                FROM Corsi c,PROGRAMMA p, ISTRUTTORE i
                 WHERE c.CodC = p.CodC
                 AND p.CodFisc = i.CodFisc
                 """
