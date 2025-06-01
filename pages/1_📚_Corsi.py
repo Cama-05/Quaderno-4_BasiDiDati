@@ -82,7 +82,7 @@ if check_connection():
                     p.OraInizio as 'Orario Inizio',
                     p.Durata as 'Durata',
                     p.Sala
-                FROM Corsi c,PROGRAMMA p, ISTRUTTORE i
+                FROM Corsi c,Programma p, Istruttore i
                 WHERE c.CodC = p.CodC
                 AND p.CodFisc = i.CodFisc
                 """
