@@ -63,7 +63,7 @@ if check_connection():
         st.subheader("📊 Lezioni per giorno della settimana")
 
         # Explicit weekday order
-        weekdays_order = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
+        weekdays_order = ['lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
 
         chart = alt.Chart(df_schedule_by_day).mark_bar().encode(
             x=alt.X('giorno:N', sort=weekdays_order, title='Giorno della setttimana'),
