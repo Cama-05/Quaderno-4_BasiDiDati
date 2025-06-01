@@ -54,7 +54,7 @@ if check_connection():
         # Area Chart: number of classes per time slot
         st.subheader("📈 Lezioni per slot orario")
         st.area_chart(
-            df_schedule_by_time.set_index('orainizio'),
+            df_schedule_by_time.set_index('OraInizio'),
             use_container_width=True
         )
 
@@ -63,9 +63,9 @@ if check_connection():
         st.subheader("📊 Lezioni per giorno della settimana")
 
         chart = alt.Chart(df_schedule_by_day).mark_bar().encode(
-            x=alt.X('giorno:N', title='Giorno della setttimana'),
-            y=alt.Y('numerolezioni:Q', title='Numero di Lezioni'),
-            tooltip=['giorno', 'numerolezioni']
+            x=alt.X('Giorno:N', title='Giorno della setttimana'),
+            y=alt.Y('NumeroLezioni:Q', title='Numero di Lezioni'),
+            tooltip=['Giorno', 'NumeroLezioni']
         ).properties(
             height=400
         )
