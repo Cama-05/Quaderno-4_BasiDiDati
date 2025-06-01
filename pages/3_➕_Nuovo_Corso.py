@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import check_connection, execute_query
+from utils import *
 
 st.set_page_config(page_title="Nuovo Corso", layout="wide")
 

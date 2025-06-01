@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
-from utils import check_connection, execute_query
+from utils import *
 
 st.set_page_config(page_title="Istruttori", layout="wide")
 
@@ -34,66 +34,68 @@ if check_connection():
         
         # Query per trovare la data di nascita più antica
         result_data_min = execute_query(st.session_state["connection"], "SELECT MIN(DataNascita) as data_min FROM ISTRUTTORE")
-        data_min_db = pd.DataFrame(result_data_min.fetchall(), columns=result_data_min.keys()).iloc[0]['data_min']
+        data_min_db = [dict(zip(result_data_min.keys(), result)) for result in result_data_min]
 
         # Query per trovare la data di nascita più recente
         result_data_max = execute_query(st.session_state["connection"], "SELECT MAX(DataNascita) as data_max FROM ISTRUTTORE")
-        data_max_db = pd.DataFrame(result_data_max.fetchall(), columns=result_data_max.keys()).iloc[0]['data_max']
+        data_max_db = [dict(zip(result_data_max.keys(), result)) for result in result_data_max]
 
         #Campi di input delle date
         data_min = st.date_input(
             "Data di nascita minima:",
-            value = data_min_db,
-            min_value=data_min_db,
+            value = data_min_db[0]['data_min'],
+            min_value=data_min_db[0]['data_min'],
             max_value=datetime.date.today()
         )
         
         data_max = st.date_input(
             "Data di nascita massima:", 
-            value=data_max_db,
-            min_value=data_min_db,
+            value=data_max_db[0]['data_max'],
+            min_value=data_min_db[0]['data_min'],
             max_value=datetime.date.today()
         )
 
     # Validazione del range di date
     if data_min > data_max:
         st.error("⚠️ Attenzione: La data minima non può essere successiva alla data massima!")
-        st.stop()
+        st.stop() #Per evitare che venga visualizzata la parte sottostante inutilmente se il filtro è privo di senso
 
     st.markdown("---")
 
-    # Costruzione query dinamica (adattata alle funzioni di utils.py)
+    # Costruzione query
     query = f"""
     SELECT CodFisc, Nome, Cognome, DataNascita, Email, Telefono
     FROM ISTRUTTORE
     WHERE DataNascita >= '{str(data_min)}' AND DataNascita <= '{str(data_max)}'
     """
     
-    # Aggiunta filtri dinamici
+    # Aggiunta filtri
     if cognome.strip(): #vengono selezionati solo quelli il cui cognome inizia con la stringa inserita in input dall'utente (anche parzialmente)
         query += f" AND LOWER(Cognome) LIKE LOWER('{cognome.strip()}%')"
     
-    # Filtro telefono semplificato con checkbox
+    # Filtro telefono con checkbox
     if solo_con_telefono:
         query += " AND Telefono IS NOT NULL AND Telefono != ''"
     
     # Ordinamento per cognome e nome
     query += " ORDER BY Cognome, Nome"
 
-    # Esecuzione della query usando le funzioni di utils.py
-    result = execute_query(st.session_state["connection"], query)
-    df_istruttori = pd.DataFrame(result.fetchall(), columns=result.keys())
+    # Esecuzione query
+    result_istruttori= execute_query(st.session_state["connection"], query)
+    df_istruttori = pd.DataFrame(result_istruttori)
     
+
+
     # Sezione risultati con metriche informative
     st.subheader("📊 Risultati della ricerca")
     
-    # Utilizzo di colonne per mostrare metriche
     col1, col2 = st.columns(2)
     with col1:
+        #N° totale di istruttori compatibili
         st.metric("Istruttori trovati", len(df_istruttori))
     with col2:
         if len(df_istruttori) > 0:
-            # Istruttori con telefono
+            #N° di Istruttori con telefono
             con_telefono = df_istruttori['Telefono'].notna().sum()
             st.metric("Con telefono", f"{con_telefono}/{len(df_istruttori)}")
 
@@ -112,9 +114,8 @@ if check_connection():
                 col_icon, col_info = st.columns([1, 8])
                 
                 with col_icon:
-                    # Icona diversa per ogni risultato come richiesto dal PDF
-                    icons = ["👨‍🏫", "👩‍🏫", "🧑‍🏫", "👨‍💼", "👩‍💼"]
-                    st.markdown(f"### {icons[index % len(icons)]}")
+                    # Icona per ogni 
+                    st.markdown(f"### 👨‍💼")
                 
                 with col_info:
                     # Nome e cognome in evidenza
@@ -135,7 +136,7 @@ if check_connection():
                     with info_col2:
                         st.markdown(f"**📧 Email:** {row['Email']}")
                         
-                        # Gestione telefono con controllo valori nulli
+                        # Gestione telefono con controllo valori nulli o stringhe vuote
                         if pd.notna(row['Telefono']) and str(row['Telefono']).strip():
                             st.markdown(f"**📞 Telefono:** {row['Telefono']}")
                         else:

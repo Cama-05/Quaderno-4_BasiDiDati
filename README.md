@@ -1,15 +1,3 @@
-# Streamlit Tutorial
-Branch base per avviare un nuovo progetto generico Streamlit con multipage.
-
-```
-git clone https://github.com/AndreaAvignone/streamlitTutorial.git
-```
-
-## Cambiare branch con Git
-```
-git checkout live_coding
-```
-
 ## Virtual env
 Si suggerisce di creare un virtual environment (e.g., venv, pipenv).
 
@@ -76,13 +64,13 @@ Per fermare:
 
 #### 4. Lanciare l'applicazione:
 ```
-python -m streamlit run 01_🏠_Home.py
+python -m streamlit run Home.py
 ```
 O direttamente con il comando *streamlit*:
 ```
-streamlit run 01_🏠_Home.py
+streamlit run Home.py
 ```
 Per evitare che si apri in automatico il browser:
 ```
-streamlit run 01_🏠_Home.py --server.headless true
+streamlit run Home.py --server.headless true
 ```

@@ -8,19 +8,19 @@ st.title("📚 Gestione Corsi")
 if check_connection():
     # Query per ottenere i tipi di corsi disponibili
     result_tipi = execute_query(st.session_state["connection"], "SELECT DISTINCT Tipo FROM CORSI ORDER BY Tipo")
-    tipi_corsi = pd.DataFrame(result_tipi.fetchall(), columns=result_tipi.keys())
+    tipi_corsi = [dict(zip(result_tipi.keys(), result)) for result in result_tipi]
     
     result_livelli = execute_query(st.session_state["connection"], "SELECT DISTINCT Livello FROM CORSI ORDER BY Livello")
-    livelli = pd.DataFrame(result_livelli.fetchall(), columns=result_livelli.keys())
+    livelli = [dict(zip(result_livelli.keys(), result)) for result in result_livelli]
 
     # Metriche
     result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM CORSI")
-    num_corsi = pd.DataFrame(result_count.fetchall(), columns=result_count.keys()).iloc[0]['count']
+    num_corsi = [dict(zip(result_count.keys(), result)) for result in result_count]
     num_tipi = len(tipi_corsi)
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Numero totale corsi", num_corsi)
+        st.metric("Numero totale corsi", num_corsi[0]['count'])
     with col2:
         st.metric("Numero tipi di corsi", num_tipi)
 
@@ -29,11 +29,12 @@ if check_connection():
     col1, col2 = st.columns(2)
 
     with col1:
-        tipo_selezionato = st.multiselect("Seleziona il tipo di corso",options=tipi_corsi['Tipo'].tolist())
+        tipo_selezionato = st.multiselect("Seleziona il tipo di corso", options=[tipo.get('Tipo') for tipo in tipi_corsi])
 
     with col2:
-        livello_min = st.slider("Livello minimo",min_value=min(livelli['Livello'].tolist()),max_value=max(livelli['Livello'].tolist()))
-        livello_max = st.slider("Livello massimo",min_value=min(livelli['Livello'].tolist()),max_value=max(livelli['Livello'].tolist()), value=max(livelli['Livello'].tolist()))
+        livelli=[livello.get('Livello') for livello in livelli]
+        livello_min = st.slider("Livello minimo",min_value=min(livelli),max_value=max(livelli))
+        livello_max = st.slider("Livello massimo",min_value=min(livelli),max_value=max(livelli), value=max(livelli))
         if(livello_min > livello_max):
             st.warning("⚠️Il livello minimo non può essere maggiore del livello massimo")
 
@@ -58,7 +59,7 @@ if check_connection():
 
 
     result_corsi = execute_query(st.session_state["connection"], query)
-    df_corsi = pd.DataFrame(result_corsi.fetchall(), columns=result_corsi.keys())
+    df_corsi = pd.DataFrame(result_corsi)
 
     if len(df_corsi) == 0:
         if livello_max > livello_min:
@@ -99,7 +100,7 @@ if check_connection():
                 query_lezioni +=f"ORDER BY c.Nome, p.OraInizio"
                 
                 result_lezioni = execute_query(st.session_state["connection"], query_lezioni)
-                df_lezioni = pd.DataFrame(result_lezioni.fetchall(), columns=result_lezioni.keys())
+                df_lezioni = pd.DataFrame(result_lezioni)
                 
                 if len(df_lezioni) > 0:
                     st.dataframe(
