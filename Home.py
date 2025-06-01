@@ -66,8 +66,8 @@ if check_connection():
         weekdays_order = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
 
         chart = alt.Chart(df_schedule_by_day).mark_bar().encode(
-            x=alt.X('Giorno:N', sort=weekdays_order, title='Giorno della setttimana'),
-            y=alt.Y('NumeroLezioni:Q', title='Numero di Lezioni'),
+            x=alt.X('giorno:N', sort=weekdays_order, title='Giorno della setttimana'),
+            y=alt.Y('numerolezioni:Q', title='Numero di Lezioni'),
             tooltip=['giorno', 'numerolezioni']
         ).properties(
             height=400
