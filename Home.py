@@ -32,7 +32,7 @@ if check_connection():
     # Query for area chart
     query_schedule_by_time = """
     SELECT OraInizio, COUNT(*) as NumeroLezioni
-    FROM PROGRAMMA
+    FROM Programma
     GROUP BY OraInizio
     ORDER BY OraInizio
     """
@@ -43,7 +43,7 @@ if check_connection():
     # Query for bar chart
     query_schedule_by_day = """
     SELECT Giorno, COUNT(*) as NumeroLezioni
-    FROM PROGRAMMA
+    FROM Programma
     GROUP BY Giorno
     """
 
