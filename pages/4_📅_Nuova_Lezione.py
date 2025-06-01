@@ -122,7 +122,7 @@ if check_connection():
                                 st.write(f"**Sala:** {room}")
 
                 except Exception as e:
-                    st.error(f"⚠️ Errore durante l'inserimento: {str(e)}")
+                    st.error(f"⚠️ Errore non previsto durante l'inserimento: {str(e)}")
 else:
     st.warning("🔌 Connettiti al database per utilizzare questa funzionalità")
     st.info("Utilizza il pulsante 'Connettiti al Database' nella barra laterale")
