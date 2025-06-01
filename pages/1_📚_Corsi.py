@@ -29,7 +29,7 @@ if check_connection():
     col1, col2 = st.columns(2)
 
     with col1:
-        selected_types = st.multiselect("Seleziona il tipo di corso", options=[tipo.get('Tipo') for tipo in course_types])
+        selected_types = st.multiselect("Seleziona il tipo di corso", options=[tipo.get('tipo') for tipo in course_types])
 
     with col2:
         levels_values = [level.get('Livello') for level in levels]
