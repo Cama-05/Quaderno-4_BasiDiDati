@@ -14,7 +14,7 @@ if check_connection():
     levels = [dict(zip(result_levels.keys(), result)) for result in result_levels]
 
     # Metrics
-    result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM CORSI")
+    result_count = execute_query(st.session_state["connection"], "SELECT COUNT(*) as count FROM corsi")
     total_courses = [dict(zip(result_count.keys(), result)) for result in result_count]
     total_types = len(course_types)
 
